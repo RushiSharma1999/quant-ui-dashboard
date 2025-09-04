@@ -48,8 +48,10 @@ export default function QuantUIPage() {
   const { toast } = useToast()
   const [selectedReport, setSelectedReport] = useState<string>("")
   const [autoDownloads, setAutoDownloads] = useState(false)
-  const [downloadProgress, setDownloadProgress] = useState(0)
-  const [isDownloading, setIsDownloading] = useState(false)
+  const [leftDownloadProgress, setLeftDownloadProgress] = useState(0)
+  const [isLeftDownloading, setIsLeftDownloading] = useState(false)
+  const [rightDownloadProgress, setRightDownloadProgress] = useState(0)
+  const [isRightDownloading, setIsRightDownloading] = useState(false)
   const [showConfirmModal, setShowConfirmModal] = useState(false)
   const [showScheduleModal, setShowScheduleModal] = useState(false)
   const [uploadProgress, setUploadProgress] = useState(0)
@@ -67,15 +69,14 @@ export default function QuantUIPage() {
       return
     }
 
-    setIsDownloading(true)
-    setDownloadProgress(0)
+    setIsLeftDownloading(true)
+    setLeftDownloadProgress(0)
 
-    // Simulate download progress
     const interval = setInterval(() => {
-      setDownloadProgress((prev) => {
+      setLeftDownloadProgress((prev) => {
         if (prev >= 100) {
           clearInterval(interval)
-          setIsDownloading(false)
+          setIsLeftDownloading(false)
           toast({
             title: "Download complete",
             description: `${SAMPLE_REPORTS.find((r) => r.id === selectedReport)?.name} has been downloaded successfully.`,
@@ -93,15 +94,14 @@ export default function QuantUIPage() {
 
   const confirmMasterDownload = async () => {
     setShowConfirmModal(false)
-    setIsDownloading(true)
-    setDownloadProgress(0)
+    setIsRightDownloading(true)
+    setRightDownloadProgress(0)
 
-    // Simulate download progress
     const interval = setInterval(() => {
-      setDownloadProgress((prev) => {
+      setRightDownloadProgress((prev) => {
         if (prev >= 100) {
           clearInterval(interval)
-          setIsDownloading(false)
+          setIsRightDownloading(false)
           toast({
             title: "Master database downloaded",
             description: "The complete master dataset has been exported successfully.",
@@ -111,6 +111,14 @@ export default function QuantUIPage() {
         return prev + 5
       })
     }, 300)
+  }
+
+  const handleScheduleChange = () => {
+    setShowScheduleModal(false)
+    toast({
+      title: "Schedule updated",
+      description: `Auto downloads set to ${schedule.frequency} at ${schedule.time}.`,
+    })
   }
 
   const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -130,7 +138,6 @@ export default function QuantUIPage() {
     setIsUploading(true)
     setUploadProgress(0)
 
-    // Simulate upload progress
     const interval = setInterval(() => {
       setUploadProgress((prev) => {
         if (prev >= 100) {
@@ -147,17 +154,8 @@ export default function QuantUIPage() {
     }, 150)
   }
 
-  const handleScheduleChange = () => {
-    setShowScheduleModal(false)
-    toast({
-      title: "Schedule updated",
-      description: `Auto downloads set to ${schedule.frequency} at ${schedule.time}.`,
-    })
-  }
-
   return (
     <div className="min-h-screen bg-slate-50">
-      {/* Header */}
       <header className="border-b bg-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
@@ -169,18 +167,15 @@ export default function QuantUIPage() {
         </div>
       </header>
 
-      {/* Main Content */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="border border-slate-200 rounded-2xl bg-white p-6 shadow-sm">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-            {/* Left Column - Query Box */}
             <div className="space-y-6">
               <div>
                 <h2 className="text-lg font-semibold text-slate-900 mb-1">Query Box</h2>
                 <p className="text-sm text-slate-600">List of reports</p>
               </div>
 
-              {/* Report Selector */}
               <div className="space-y-4">
                 <Select value={selectedReport} onValueChange={setSelectedReport}>
                   <SelectTrigger className="w-full">
@@ -198,9 +193,12 @@ export default function QuantUIPage() {
                   </SelectContent>
                 </Select>
 
-                {/* Download Button */}
-                <Button onClick={handleDownloadReport} disabled={!selectedReport || isDownloading} className="w-full">
-                  {isDownloading ? (
+                <Button
+                  onClick={handleDownloadReport}
+                  disabled={!selectedReport || isLeftDownloading}
+                  className="w-full"
+                >
+                  {isLeftDownloading ? (
                     <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                   ) : (
                     <Download className="h-4 w-4 mr-2" />
@@ -208,16 +206,14 @@ export default function QuantUIPage() {
                   Download
                 </Button>
 
-                {/* Progress Bar */}
-                {isDownloading && (
+                {isLeftDownloading && (
                   <div className="space-y-2">
-                    <Progress value={downloadProgress} className="w-full" />
-                    <p className="text-sm text-slate-600 text-center">Downloading... {downloadProgress}%</p>
+                    <Progress value={leftDownloadProgress} className="w-full" />
+                    <p className="text-sm text-slate-600 text-center">Downloading... {leftDownloadProgress}%</p>
                   </div>
                 )}
               </div>
 
-              {/* Auto Downloads */}
               <Card>
                 <CardHeader className="pb-3">
                   <div className="flex items-center justify-between">
@@ -249,14 +245,12 @@ export default function QuantUIPage() {
               </Card>
             </div>
 
-            {/* Right Column - Inventory Database */}
             <div className="space-y-6">
               <div>
                 <h2 className="text-lg font-semibold text-slate-900">Inventory Database</h2>
               </div>
 
               <div className="space-y-4">
-                {/* Download Master Database Card */}
                 <Card className="border-red-200 bg-red-50/50">
                   <CardHeader>
                     <CardTitle className="flex items-center gap-2 text-red-700">
@@ -271,19 +265,25 @@ export default function QuantUIPage() {
                       variant="outline"
                       className="w-full border-red-300 text-red-700 hover:bg-red-100 bg-transparent"
                       onClick={handleMasterDownload}
-                      disabled={isDownloading}
+                      disabled={isRightDownloading}
                     >
-                      {isDownloading ? (
+                      {isRightDownloading ? (
                         <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                       ) : (
                         <Database className="h-4 w-4 mr-2" />
                       )}
                       Download Master DB
                     </Button>
+
+                    {isRightDownloading && (
+                      <div className="space-y-2 mt-4">
+                        <Progress value={rightDownloadProgress} className="w-full" />
+                        <p className="text-sm text-red-600 text-center">Downloading... {rightDownloadProgress}%</p>
+                      </div>
+                    )}
                   </CardContent>
                 </Card>
 
-                {/* Upload New Data Card */}
                 <Card className="border-green-200 bg-green-50/50">
                   <CardHeader>
                     <CardTitle className="flex items-center gap-2 text-green-700">
@@ -348,7 +348,6 @@ export default function QuantUIPage() {
         </div>
       </main>
 
-      {/* Confirm Master Download Modal */}
       <Dialog open={showConfirmModal} onOpenChange={setShowConfirmModal}>
         <DialogContent>
           <DialogHeader>
@@ -370,7 +369,6 @@ export default function QuantUIPage() {
         </DialogContent>
       </Dialog>
 
-      {/* Schedule Modal */}
       <Dialog open={showScheduleModal} onOpenChange={setShowScheduleModal}>
         <DialogContent>
           <DialogHeader>
